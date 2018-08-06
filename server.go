@@ -31,7 +31,13 @@ func newServer(handler http.Handler, port int) (*server, error) {
 
 // Serve calls the underlying HTTP server's Serve() function, passing
 // it the listener
-func (s server) Serve(certFile, keyFile string) error {
+func (s server) Serve() error {
+	return s.srv.Serve(s.listen)
+}
+
+// ServeTLS calls the underlying HTTP server's ServeTLS() function, passing
+// it the listener
+func (s server) ServeTLS(certFile, keyFile string) error {
 	return s.srv.ServeTLS(s.listen, certFile, keyFile)
 }
 

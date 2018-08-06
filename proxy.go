@@ -108,6 +108,7 @@ func (p proxy) Api() http.Handler {
 				// Restore from "use" pool
 				if route, ok := use[prefix]; ok {
 					p.Routes[prefix] = route
+					fmt.Printf("Configuration updated for %s: %s\n", prefix, p.String())
 				}
 
 				w.WriteHeader(201)
@@ -130,7 +131,9 @@ func (p proxy) Api() http.Handler {
 				if _, exist := use[prefix]; !exist {
 					use[prefix] = route
 				}
+
 				p.Routes[prefix] = url
+				fmt.Printf("Configuration updated for %s: %s\n", prefix, p.String())
 
 				w.WriteHeader(201)
 				w.Write([]byte(fmt.Sprintf("Developing %s at %s", prefix, url)))
