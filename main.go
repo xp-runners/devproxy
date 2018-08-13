@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Set up proxy
-	proxy := newProxy()
+	proxy := newProxy(proxyPort)
 	proxy.Routes = routes
 
 	srv, err := newServer(proxy.Handler(), proxyPort)

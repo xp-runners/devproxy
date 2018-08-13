@@ -57,11 +57,12 @@ func (r roundtripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 type proxy struct {
 	Routes map[string]*url.URL
+	Port   int
 }
 
 // newProxy returns a new proxy instance.
-func newProxy() *proxy {
-	return &proxy{make(map[string]*url.URL)}
+func newProxy(port int) *proxy {
+	return &proxy{make(map[string]*url.URL), port}
 }
 
 // Handle returns a http.Handler suitable for use with HTTP servers
@@ -71,8 +72,9 @@ func (p proxy) Handler() http.Handler {
 			if strings.HasPrefix(req.URL.Path, prefix) {
 
 				// Transfer origin host
-				req.Header.Add("X-Forwarded-Host", req.URL.Host)
-				req.Header.Add("X-Forwarded-Proto", req.URL.Scheme)
+				req.Header.Add("X-Forwarded-Host", req.Host)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.Header.Add("X-Forwarded-Port", fmt.Sprintf("%d", p.Port))
 				req.Host = target.Host
 
 				// Rewrite URL
