@@ -43,7 +43,7 @@ func main() {
 	}
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop)
+	signal.Notify(stop, os.Interrupt)
 
 	fmt.Printf("Started proxy server on port %d (https), API on port %d (http)\n", proxyPort, apiPort)
 	fmt.Printf("Configuration: %s\n", proxy)
