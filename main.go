@@ -12,11 +12,11 @@ func main() {
 	var apiPort, proxyPort int
 	var config, certFile, keyFile string
 
-	flag.IntVar(&proxyPort, "--port", 443, "Sets proxy port (defaults to 443)")
-	flag.IntVar(&apiPort, "--api", 8008, "Sets API port (defaults to 8008)")
-	flag.StringVar(&config, "--config", "devproxy.conf", "Specifies configuration file")
-	flag.StringVar(&certFile, "--cert", "devproxy.crt", "Specifies TLS certificate")
-	flag.StringVar(&keyFile, "--key", "devproxy.key", "Specifies TLS key")
+	flag.IntVar(&proxyPort, "port", 443, "Sets proxy port (defaults to 443)")
+	flag.IntVar(&apiPort, "api", 8008, "Sets API port (defaults to 8008)")
+	flag.StringVar(&config, "config", "devproxy.conf", "Specifies configuration file")
+	flag.StringVar(&certFile, "cert", "devproxy.crt", "Specifies TLS certificate")
+	flag.StringVar(&keyFile, "key", "devproxy.key", "Specifies TLS key")
 	flag.Parse()
 
 	routes, err := parseConfig(config)
