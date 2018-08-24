@@ -56,31 +56,41 @@ func (r roundtripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 type proxy struct {
-	Routes map[string]*url.URL
-	Port   int
+	lookup map[string]*url.URL
+	routes []string
+	port   int
 }
 
 // newProxy returns a new proxy instance.
 func newProxy(port int) *proxy {
-	return &proxy{make(map[string]*url.URL), port}
+	return &proxy{make(map[string]*url.URL), make([]string, 0), port}
+}
+
+// Proxy adds or updates a given prefix to be proxied to a given backend
+func (p *proxy) Proxy(prefix string, backend *url.URL) {
+	if _, exist := p.lookup[prefix]; !exist {
+		p.routes = append(p.routes, prefix)
+	}
+	p.lookup[prefix] = backend
 }
 
 // Handle returns a http.Handler suitable for use with HTTP servers
 func (p proxy) Handler() http.Handler {
 	director := func(req *http.Request) {
-		for prefix, target := range p.Routes {
-			if strings.HasPrefix(req.URL.Path, prefix) {
+		for _, route := range p.routes {
+			if strings.HasPrefix(req.URL.Path, route) {
+				target := p.lookup[route]
 
 				// Transfer origin host
 				req.Header.Add("X-Forwarded-Host", req.Host)
 				req.Header.Add("X-Forwarded-Proto", "https")
-				req.Header.Add("X-Forwarded-Port", fmt.Sprintf("%d", p.Port))
+				req.Header.Add("X-Forwarded-Port", fmt.Sprintf("%d", p.port))
 				req.Host = target.Host
 
 				// Rewrite URL
 				req.URL.Scheme = target.Scheme
 				req.URL.Host = target.Host
-				req.URL.Path = target.Path + strings.Replace(req.URL.Path, prefix, "", 1)
+				req.URL.Path = target.Path + strings.Replace(req.URL.Path, route, "", 1)
 				if target.RawQuery == "" || req.URL.RawQuery == "" {
 					req.URL.RawQuery = target.RawQuery + req.URL.RawQuery
 				} else {
@@ -105,16 +115,16 @@ func (p proxy) Api() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/use") {
 			prefix := strings.Replace(r.URL.Path, "/use", "", 1)
-			if _, exist := p.Routes[prefix]; exist {
+			if _, exist := p.lookup[prefix]; exist {
 
 				// Restore from "use" pool
 				if route, ok := use[prefix]; ok {
-					p.Routes[prefix] = route
+					p.lookup[prefix] = route
 					fmt.Printf("Configuration updated for %s: %s\n", prefix, p.String())
 				}
 
 				w.WriteHeader(201)
-				w.Write([]byte(fmt.Sprintf("Using %s from %s", prefix, p.Routes[prefix])))
+				w.Write([]byte(fmt.Sprintf("Using %s from %s", prefix, p.lookup[prefix])))
 				return
 			}
 
@@ -127,14 +137,14 @@ func (p proxy) Api() http.Handler {
 			}
 
 			prefix := strings.Replace(r.URL.Path, "/develop", "", 1)
-			if route, ok := p.Routes[prefix]; ok {
+			if route, ok := p.lookup[prefix]; ok {
 
 				// Backup original URL into "use" pool
 				if _, exist := use[prefix]; !exist {
 					use[prefix] = route
 				}
 
-				p.Routes[prefix] = url
+				p.lookup[prefix] = url
 				fmt.Printf("Configuration updated for %s: %s\n", prefix, p.String())
 
 				w.WriteHeader(201)
@@ -153,8 +163,8 @@ func (p proxy) Api() http.Handler {
 // String implements the Stringer interface
 func (p proxy) String() string {
 	s := "{\n"
-	for prefix, target := range p.Routes {
-		s += "  " + prefix + " -> " + target.String() + "\n"
+	for _, route := range p.routes {
+		s += "  " + route + " -> " + p.lookup[route].String() + "\n"
 	}
 	return s + "}"
 }
