@@ -10,24 +10,26 @@ import (
 
 func main() {
 	var apiPort, proxyPort int
-	var config, certFile, keyFile string
+	var configFile, certFile, keyFile string
 
 	flag.IntVar(&proxyPort, "port", 443, "Sets proxy port (defaults to 443)")
 	flag.IntVar(&apiPort, "api", 8008, "Sets API port (defaults to 8008)")
-	flag.StringVar(&config, "config", "devproxy.conf", "Specifies configuration file")
+	flag.StringVar(&configFile, "config", "devproxy.conf", "Specifies configuration file")
 	flag.StringVar(&certFile, "cert", "devproxy.crt", "Specifies TLS certificate")
 	flag.StringVar(&keyFile, "key", "devproxy.key", "Specifies TLS key")
 	flag.Parse()
 
-	routes, err := parseConfig(config)
+	config, err := parseConfig(configFile)
 	if err != nil {
-		fmt.Printf("Could not parse configurtion: %v\n", err)
+		fmt.Printf("Could not parse configuration: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Set up proxy
 	proxy := newProxy(proxyPort)
-	proxy.Routes = routes
+	for _, pair := range config {
+		proxy.Proxy(pair.Prefix, pair.Target)
+	}
 
 	srv, err := newServer(proxy.Handler(), proxyPort)
 	if err != nil {

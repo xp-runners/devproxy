@@ -8,19 +8,24 @@ import (
 	"strings"
 )
 
+type pair struct {
+	Prefix string
+	Target *url.URL
+}
+
 // parseConfig parses the configuration file. Its format is:
 //
 // /prefix http://proxy.target.host/base
 //
 // Empty lines and lines beginning with a "#" sign are ignored
-func parseConfig(config string) (map[string]*url.URL, error) {
+func parseConfig(config string) ([]pair, error) {
 	file, err := os.Open(config)
 	if err != nil {
 		return nil, fmt.Errorf("Could not open configuration: %v\n", err)
 	}
 	defer file.Close()
 
-	routes := make(map[string]*url.URL)
+	pairs := make([]pair, 0)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -34,9 +39,9 @@ func parseConfig(config string) (map[string]*url.URL, error) {
 			if err != nil {
 				return nil, fmt.Errorf("Malformed URL %s: %v\n", tokens[1], err)
 			}
-			routes[tokens[0]] = url
+			pairs = append(pairs, pair{tokens[0], url})
 		}
 	}
 
-	return routes, scanner.Err()
+	return pairs, scanner.Err()
 }
