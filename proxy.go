@@ -22,7 +22,7 @@ func newResponse(status int, text string, args ...interface{}) *http.Response {
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, text, args...)
 	return &http.Response{
-		StatusCode: 404,
+		StatusCode: status,
 		Body:       ioutil.NopCloser(buf),
 	}
 }

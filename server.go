@@ -8,14 +8,12 @@ import (
 	"time"
 )
 
-const timeout = 5 * time.Second
-
 type server struct {
 	srv    *http.Server
 	listen net.Listener
 }
 
-func newServer(handler http.Handler, port int) (*server, error) {
+func newServer(handler http.Handler, port int, timeout time.Duration) (*server, error) {
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return nil, fmt.Errorf("Could not listen: %v\n", err)
@@ -44,7 +42,8 @@ func (s server) ServeTLS(certFile, keyFile string) error {
 // Shutdown calls the underlying HTTP server's Shutdown() function
 // with a given timeout
 func (s server) Shutdown(timeout time.Duration) error {
-	ctx, _ := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	defer s.listen.Close()
 	return s.srv.Shutdown(ctx)
 }

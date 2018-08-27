@@ -9,11 +9,12 @@ import (
 )
 
 func main() {
-	var apiPort, proxyPort int
+	var apiPort, proxyPort, timeout int
 	var configFile, certFile, keyFile string
 
 	flag.IntVar(&proxyPort, "port", 443, "Sets proxy port (defaults to 443)")
 	flag.IntVar(&apiPort, "api", 8008, "Sets API port (defaults to 8008)")
+	flag.IntVar(&timeout, "timeout", 10, "Sets proxy read and write timeouts (in seconds)")
 	flag.StringVar(&configFile, "config", "devproxy.conf", "Specifies configuration file")
 	flag.StringVar(&certFile, "cert", "devproxy.crt", "Specifies TLS certificate")
 	flag.StringVar(&keyFile, "key", "devproxy.key", "Specifies TLS key")
@@ -31,14 +32,14 @@ func main() {
 		proxy.Proxy(pair.Prefix, pair.Target)
 	}
 
-	srv, err := newServer(proxy.Handler(), proxyPort)
+	srv, err := newServer(proxy.Handler(), proxyPort, time.Duration(timeout)*time.Second)
 	if err != nil {
 		fmt.Printf("Could not start server: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Set up API
-	api, err := newServer(proxy.Api(), apiPort)
+	api, err := newServer(proxy.Api(), apiPort, 3*time.Second)
 	if err != nil {
 		fmt.Printf("Could not start server: %v\n", err)
 		os.Exit(1)
